@@ -1,24 +1,10 @@
-openerp.web_search_with_and = function (instance) {
+odoo.define('base_search_and.search_and', function(require) {
+    "use strict";
+    var SearchInputs = require('web.search_inputs');
+    var SearchView = require('web.SearchView');
 
-    instance.web.SearchView =  instance.web.SearchView.extend({
-        select_completion: function (e, ui) {
-            var self = this;
-            if (e.shiftKey) {
-                e.preventDefault();
-
-                var input_index = _(this.input_subviews).indexOf(
-                    this.subviewForRoot(
-                        this.$('div.oe_searchview_input:focus')[0]));
-                this.query.add(ui.item.facet, {at: input_index / 2, shiftKey: true});
-            } else {
-                this._super(e, ui);
-            }
-        },
-    });
-
-    instance.web.search.SearchQuery = instance.web.search.SearchQuery.extend({
+    var SearchQueryExtended = SearchView.SearchQuery.extend({
         add: function (values, options) {
-
             options = options || {};
 
             if (!values) {
@@ -40,4 +26,27 @@ openerp.web_search_with_and = function (instance) {
             }
         },
     });
-};
+    SearchView.include({
+        start: function() {
+            var res = this._super();
+            this.query = new SearchQueryExtended()
+                .on('add change reset remove', this.proxy('do_search'))
+                .on('change', this.proxy('renderChangedFacets'))
+                .on('add reset remove', this.proxy('renderFacets'));
+            return res;
+        },
+        select_completion: function (e, ui) {
+            var self = this;
+            if (e.shiftKey) {
+                e.preventDefault();
+
+                var input_index = _(this.input_subviews).indexOf(
+                    this.subviewForRoot(
+                        this.$('div.oe_searchview_input:focus')[0]));
+                        this.query.add(ui.item.facet, {at: input_index / 2, shiftKey: true});
+            } else {
+                this._super(e, ui);
+            }
+        },
+    });
+});
